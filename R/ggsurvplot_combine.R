@@ -89,13 +89,19 @@ ggsurvplot_combine <- function(fit, data,
     #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     # Surv summary of each fit
     #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    # Helper function
-    .surv_summary <- function(fit, fitname, ...){
+    # Helper function, color and linetype should be strings -> if not NULL
+    # they will create columns with the original strata and prefix (to differentiate
+    # using colour and linetype) respectively.
+    .surv_summary <- function(fit, fitname, color, linetype, ...){
       time <- n.censor <- surv <- upper <- lower <- strata <- NULL
       survsummary <- surv_summary(fit, ...)
       # Bind fit name to the srata levels in survsummary
       if(is.null(survsummary$strata)) survsummary$strata <- as.factor(rep("All", nrow(survsummary)))
       strata.levels <- paste(fitname, "::", .levels(survsummary$strata), sep = "")
+      if(!is.null(color))
+        survsummary[,color] <- survsummary$strata
+      if(!is.null(linetype))
+        survsummary[,linetype] <- fitname
       survsummary$strata <- paste(fitname, "::", survsummary$strata, sep = "") %>%
         factor(levels = strata.levels)
       survsummary %>%
@@ -105,7 +111,9 @@ ggsurvplot_combine <- function(fit, data,
     # Surv summary
     grouped.d <- grouped.d %>%
       mutate(survsummary = purrr::map2(grouped.d$fit, grouped.d$name,
-                                       .surv_summary, data = data))
+                                       .surv_summary, data = data,
+                                       color = .dots$color, 
+                                       linetype = .dots$linetype))
 
     # Row bind all survsummary data
     #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
